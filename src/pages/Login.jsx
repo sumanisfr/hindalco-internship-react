@@ -1,26 +1,55 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Row, Col, Form, Button, Card } from "react-bootstrap";
+import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { loginUser } from "../utils/auth";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const validateEmail = (email) => {
+    // Basic email validation regex
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
+    setError(""); // Clear previous errors
 
-    // Simple authentication logic
-       if (email === "user@hindalco.com" && password === "password") {
-      navigate("/dashboard/userDashboard");
+    if (!email || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Invalid email format.");
+      return;
+    }
+
+    let userRole = null;
+    let dashboardPath = "";
+
+    if (email === "user@hindalco.com" && password === "password") {
+      userRole = "user";
+      dashboardPath = "/dashboard/userDashboard";
     } else if (email === "manager@hindalco.com" && password === "password") {
-      navigate("/dashboard/managerDashboard");
+      userRole = "manager";
+      dashboardPath = "/dashboard/managerDashboard";
     } else if (email === "admin@hindalco.com" && password === "password") {
-      navigate("/dashboard/AdminDashboard");
+      userRole = "admin";
+      // Corrected path to AdminDashboard as per App.jsx
+      dashboardPath = "/dashboard/adminDashboard";
+    }
+
+    if (userRole) {
+      loginUser({ email, role: userRole });
+      navigate(dashboardPath);
     } else {
-      alert("Invalid credentials");
+      setError("Invalid email or password.");
     }
   };
 
@@ -59,6 +88,8 @@ const Login = () => {
                 <Card.Subtitle className="text-muted mb-4 text-center">
                   Sign in to your account to continue
                 </Card.Subtitle>
+
+                {error && <Alert variant="danger">{error}</Alert>}
 
                 <Form onSubmit={handleLogin}>
                   <Form.Group className="mb-3">

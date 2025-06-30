@@ -1,46 +1,70 @@
 // src/components/Dashboard.jsx
 import React, { useState, useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
+import { getLoggedInUser, logoutUser, getUserRole } from "../utils/auth";
 
 function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loggedInUser, setLoggedInUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const userRole = getUserRole();
 
   useEffect(() => {
-    // Simulate fetching user data
-    const fetchUserData = async () => {
-      try {
-        // Replace with actual API call
-        const userData = { name: "John Doe", email: "john@example.com" };
-        setUser(userData);
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+    const user = getLoggedInUser();
+    if (user) {
+      setLoggedInUser(user);
+    } else {
+      // Should be handled by ProtectedRoute, but as a fallback:
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
-    // Clear user session
-    localStorage.removeItem("token");
+    logoutUser();
     navigate("/login");
   };
 
-  if (loading) {
-    return <div className="loading">Loading...</div>;
+  if (!loggedInUser) {
+    // This should ideally not be shown if ProtectedRoute works correctly
+    return <div className="loading">Loading user data or redirecting...</div>;
   }
+
+  const getNavLinks = () => {
+    const commonLinks = [
+      { to: "/dashboard/overview", label: "Overview" },
+      { to: "/dashboard/profile", label: "Profile" },
+      { to: "/dashboard/settings", label: "Settings" },
+    ];
+
+    let roleSpecificLinks = [];
+    if (userRole === "admin") {
+      roleSpecificLinks = [
+        { to: "/dashboard/adminDashboard", label: "Admin Panel" },
+        // Admin might also have links to view other dashboards if desired
+        { to: "/dashboard/managerDashboard", label: "View Manager DB" },
+        { to: "/dashboard/userDashboard", label: "View User DB" },
+      ];
+    } else if (userRole === "manager") {
+      roleSpecificLinks = [
+        { to: "/dashboard/managerDashboard", label: "Manager Panel" },
+      ];
+    } else if (userRole === "user") {
+      roleSpecificLinks = [
+        { to: "/dashboard/userDashboard", label: "User Panel" },
+      ];
+    }
+    return [...commonLinks, ...roleSpecificLinks];
+  };
+
+  const navLinks = getNavLinks();
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h2>Main Dashboard</h2>
+        <h2>Tool Tracking Dashboard</h2>
         <div className="user-info">
-          <span>Welcome, {user?.name}</span>
+          {/* Display email as name, or enhance user object later */}
+          <span>Welcome, {loggedInUser.email} ({userRole})</span>
           <button onClick={handleLogout} className="logout-btn">
             Logout
           </button>
@@ -48,28 +72,19 @@ function Dashboard() {
       </header>
 
       <nav className="dashboard-nav">
-        <Link 
-          to="/dashboard/overview" 
-          className={location.pathname === "/dashboard/overview" ? "active" : ""}
-        >
-          Overview
-        </Link>
-        <Link 
-          to="/dashboard/profile" 
-          className={location.pathname === "/dashboard/profile" ? "active" : ""}
-        >
-          Profile
-        </Link>
-        <Link 
-          to="/dashboard/settings" 
-          className={location.pathname === "/dashboard/settings" ? "active" : ""}
-        >
-          Settings
-        </Link>
+        {navLinks.map(link => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className={location.pathname === link.to ? "active" : ""}
+          >
+            {link.label}
+          </Link>
+        ))}
       </nav>
 
       <main className="dashboard-content">
-        <Outlet />
+        <Outlet /> {/* Child routes (Overview, AdminDashboard, etc.) render here */}
       </main>
     </div>
   );
