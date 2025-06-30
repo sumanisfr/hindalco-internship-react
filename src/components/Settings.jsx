@@ -10,9 +10,9 @@ const Settings = () => {
   const handleSave = () => {
     // Save settings logic here
     console.log('Settings saved:', { theme, notifications, language });
-    
-    // Redirect after saving
-    navigate('/dashboard'); // or navigate('/dashboard') or wherever you want to redirect
+    alert('Settings saved! (This is a placeholder confirmation)'); // Placeholder confirmation
+    // Redirect after saving to a consistent dashboard page
+    navigate('/dashboard/overview');
   };
 
   return (
